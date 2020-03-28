@@ -2,8 +2,12 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -51,6 +55,7 @@ func main() {
 	inputHandler()
 
 }
+
 func handleStream(s network.Stream) {
 	logrus.Debug("New stream")
 	rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
@@ -104,15 +109,22 @@ func inputHandler() {
 		} else if strings.Compare("version", text) == 0 {
 			logrus.Debug("Displaying version")
 			menuVersion()
+		} else if strings.Compare("create-wallet", text) == 0 {
+			logrus.Debug("Creating Wallet")
+			menuCreateWallet()
 		} else if strings.Compare("peer-info", text) == 0 {
 			menuCreatePeer()
 		} else if strings.Compare("exit", text) == 0 {
+			logrus.Warning("Exiting")
 			menuExit()
 		} else if strings.Compare("quit", text) == 0 {
+			logrus.Warning("Exiting")
 			menuExit()
 		} else if strings.Compare("close", text) == 0 {
+			logrus.Warning("Exiting")
 			menuExit()
 		} else {
+			logrus.Warning("Invalid input")
 			logrus.Error("\nwtf is " + text + "???")
 			logrus.Error("Please choose something I can actually do:")
 			menuHelp()
@@ -124,20 +136,87 @@ func inputHandler() {
 func menuHelp() {
 	fmt.Println("\n\x1b[35mversion \t\t \x1b[0mDisplays version")
 	fmt.Println("\x1b[35mcreate-wallet \t\t \x1b[0mCreate a TRTL wallet")
-	fmt.Println("\x1b[35mwallet-balance \t\t \x1b[0mDisplays wallet balance")
-	fmt.Println("\x1b[35mlist-servers \t\t \x1b[0mLists pinning servers")
-	fmt.Println("\x1b[35mcreate-peer \t\t \x1b[0mCreates IPFS peer")
+	fmt.Println("\x1b[31mwallet-balance \t\t \x1b[0mDisplays wallet balance")
+	fmt.Println("\x1b[31mlist-servers \t\t \x1b[0mLists pinning servers")
+	fmt.Println("\x1b[31mcreate-peer \t\t \x1b[0mCreates IPFS peer")
 	fmt.Println("\x1b[35mexit \t\t\t \x1b[0mQuit immediately")
 }
+
+// func menuCreateWallet() {
+// 	logrus.Info("✔ creating requestbody")
+// 	client := &http.Client{}
+// 	req, err := json.Marshal(map[string]string{
+
+// 		"daemonHost": "127.0.0.1",
+// 		"daemonPort": "11898",
+// 		"filename":   "karai-wallet.wallet",
+// 		"password":   "supersecretpassword",
+// 	})
+
+// 	req.Header.Add("X-API-KEY: pineapples")
+
+// 	if err != nil {
+// 		logrus.Error(err)
+// 	}
+
+// 	logrus.Info("✔ Describing response")
+// 	resp, err := http.Post("http://127.0.0.1:8070", "application/json", bytes.NewBuffer(req))
+// 	if err != nil {
+// 		logrus.Error(err)
+// 	}
+// 	logrus.Info("✔ defering response body close")
+// 	defer resp.Body.Close()
+
+// 	logrus.Info("✔ ioutil readall")
+// 	body, err := ioutil.ReadAll(resp.Body)
+// 	if err != nil {
+// 		logrus.Error(err)
+// 	}
+// 	logrus.Info("✔ printing stringified body")
+// 	fmt.Printf(string(body))
+
+// }
+
 func menuCreateWallet() {
-	fmt.Println("create a wallet")
+
+	url := "http://127.0.0.1:8070/wallet/create"
+
+	data := []byte(`{"daemonHost": "127.0.0.1",	"daemonPort": 11898, "filename": "karai-wallet.wallet", "password": "supersecretpassword"}`)
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+	if err != nil {
+		log.Fatal("Error reading request. ", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-KEY", "pineapples")
+
+	client := &http.Client{Timeout: time.Second * 10}
+	logrus.Info(req.Header)
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Error reading response. ", err)
+	}
+	defer resp.Body.Close()
+
+	logrus.Info("response Status:", resp.Status)
+	logrus.Info("response Headers:", resp.Header)
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal("Error reading body. ", err)
+	}
+
+	fmt.Printf("%s\n", body)
 }
+
 func menuBalance() {
 	fmt.Println("display wallet balance")
 }
 func menuListPinServers() {
 	fmt.Println("list known pinning servers")
 }
+
 func menuCreatePeer() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -189,7 +268,6 @@ func menuCreatePeer() {
 
 	fmt.Printf("Peer ID is %s\n", nodePeer.ID())
 }
-
 func menuVersion() {
 	fmt.Println(appName + " - v" + semverInfo())
 }
