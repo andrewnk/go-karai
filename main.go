@@ -37,21 +37,22 @@ func semverInfo() string {
 	var majorSemver, minorSemver, patchSemver, wholeString string
 	majorSemver = "0"
 	minorSemver = "0"
-	patchSemver = "1"
+	patchSemver = "2"
 
 	wholeString = majorSemver + "." + minorSemver + "." + patchSemver
 	return wholeString
 }
 
 func ascii() {
-	myFigure := figure.NewFigure("karai", "shadow", true)
+	fmt.Println("\033[1;32m")
+	myFigure := figure.NewFigure("karai", "block", true)
 	myFigure.Print()
+	fmt.Println("\x1b[0m")
 }
 
 func main() {
 
 	ascii()
-	fmt.Println("\nType \x1b[35m'menu'\x1b[0m to view a list of commands")
 	inputHandler()
 
 }
@@ -70,9 +71,7 @@ func readData(rw *bufio.ReadWriter) {
 			return
 		}
 		if str != "\n" {
-			// Green console colour: 	\x1b[35m
-			// Reset console colour: 	\x1b[0m
-			fmt.Printf("\x1b[32m%s\x1b[0m> ", str)
+			fmt.Printf("\033[1;32m%s\x1b[0m> ", str)
 		}
 
 	}
@@ -95,6 +94,8 @@ func writeData(rw *bufio.ReadWriter) {
 func inputHandler() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
+
+		fmt.Println("\033[0;37mType \033[1;32m'menu'\033[0;37m to view a list of commands\033[1;37m")
 		fmt.Print("-> ")
 		text, _ := reader.ReadString('\n')
 		// convert CRLF to LF
@@ -115,6 +116,9 @@ func inputHandler() {
 		} else if strings.Compare("open-wallet", text) == 0 {
 			logrus.Debug("Opening Wallet")
 			menuOpenWallet()
+		} else if strings.Compare("open-wallet-info", text) == 0 {
+			logrus.Debug("Opening Wallet Info")
+			menuOpenWalletInfo()
 		} else if strings.Compare("peer-info", text) == 0 {
 			menuCreatePeer()
 		} else if strings.Compare("exit", text) == 0 {
@@ -126,24 +130,116 @@ func inputHandler() {
 		} else if strings.Compare("close", text) == 0 {
 			logrus.Warning("Exiting")
 			menuExit()
+		} else if strings.Compare("\n", text) == 0 {
+			fmt.Println("")
 		} else {
-			logrus.Warning("Invalid input")
-			logrus.Error("\nwtf is " + text + "???")
-			logrus.Error("Please choose something I can actually do:")
+			fmt.Println("\nChoose an option from the menu")
 			menuHelp()
 		}
 
 	}
 }
 
+func menuOpenWalletInfo() {
+	// display primary address balance
+	walletInfoPrimaryAddressBalance()
+	// prompt for displaying keys
+	// walletInfoDisplayPromptForKeys(primaryAddressString)
+	// get the information of the node you're using
+	getNodeInfo()
+	getWalletAPIStatus()
+}
+
+func getWalletAPIStatus() {
+	logrus.Info("[Wallet-API Status]")
+	req, err := http.NewRequest("GET", "http://127.0.0.1:8070/status", nil)
+	if err != nil {
+		log.Fatal("Error reading request for wallet-api status. ", err)
+	}
+
+	req.Header.Set("X-API-KEY", "pineapples")
+
+	client := &http.Client{Timeout: time.Second * 10}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Error reading response from wallet-api status. ", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal("Error reading body of wallet-api status response. ", err)
+	}
+
+	fmt.Printf("%s\n", body)
+}
+
+func getNodeInfo() {
+	logrus.Info("[Node Info]")
+	req, err := http.NewRequest("GET", "http://127.0.0.1:8070/node", nil)
+	if err != nil {
+		log.Fatal("Error reading request for node info. ", err)
+	}
+
+	req.Header.Set("X-API-KEY", "pineapples")
+
+	client := &http.Client{Timeout: time.Second * 10}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Error reading response from node info. ", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal("Error reading body of node info response. ", err)
+	}
+
+	fmt.Printf("%s\n", body)
+}
+func walletInfoPrimaryAddressBalance() {
+	logrus.Info("[Primary Address]")
+	req, err := http.NewRequest("GET", "http://127.0.0.1:8070/balances", nil)
+	if err != nil {
+		log.Fatal("Error reading request for balances. ", err)
+	}
+
+	req.Header.Set("X-API-KEY", "pineapples")
+
+	client := &http.Client{Timeout: time.Second * 10}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Error reading response from balances. ", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal("Error reading body of balances response. ", err)
+	}
+
+	fmt.Printf("%s\n", body)
+}
+
 func menuHelp() {
-	fmt.Println("\n\x1b[35mversion \t\t \x1b[0mDisplays version")
-	fmt.Println("\x1b[35mcreate-wallet \t\t \x1b[0mCreate a TRTL wallet")
-	fmt.Println("\x1b[35mopen-wallet \t\t \x1b[0mOpen a TRTL wallet")
-	fmt.Println("\x1b[31mwallet-balance \t\t \x1b[0mDisplays wallet balance")
-	fmt.Println("\x1b[31mlist-servers \t\t \x1b[0mLists pinning servers")
-	fmt.Println("\x1b[31mcreate-peer \t\t \x1b[0mCreates IPFS peer")
-	fmt.Println("\x1b[35mexit \t\t\t \x1b[0mQuit immediately")
+	fmt.Println("\n\033[1;32mWALLET_OPTIONS\033[1;37m\x1b[0m")
+	fmt.Println("\033[1;37mopen-wallet \t\t \033[0;37mOpen a TRTL wallet\x1b[0m")
+	fmt.Println("\033[1;37mopen-wallet-info \t \033[0;37mShow wallet and connection info\x1b[0m")
+	fmt.Println("\033[1;37mcreate-wallet \t\t \033[0;37mCreate a TRTL wallet\x1b[0m")
+	fmt.Println("\033[1;30mwallet-balance \t\t Displays wallet balance\x1b[0m")
+
+	fmt.Println("\n\033[1;32mIPFS_OPTIONS\033[1;37m\x1b[0m")
+	fmt.Println("\033[1;37mcreate-peer \t\t \033[0;37mCreates IPFS peer\x1b[0m")
+	fmt.Println("\033[1;30mlist-servers \t\t Lists pinning servers\x1b[0m")
+
+	fmt.Println("\n\033[1;32mGENERAL_OPTIONS\033[1;37m\x1b[0m")
+	fmt.Println("\033[1;37mversion \t\t \033[0;37mDisplays version\033[0m")
+	fmt.Println("\033[1;37mexit \t\t\t \033[0;37mQuit immediately\x1b[0m")
+
+	fmt.Println("")
 }
 
 func menuCreateWallet() {
@@ -213,9 +309,6 @@ func menuOpenWallet() {
 
 }
 
-func menuBalance() {
-	fmt.Println("display wallet balance")
-}
 func menuListPinServers() {
 	fmt.Println("list known pinning servers")
 }
