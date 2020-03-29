@@ -8,10 +8,6 @@ Karai connection helper written in Go
 
 This will launch `go-karai`
 
-`./go-karai /ip4/127.0.0.1/tcp/40485/p2p/QmZCddScZ82V8Y2dkU5o7Fvs8QLuFm1TbKepQWvrDGktgR`
-
-With two instances of `go-karai` running, you can send a ping from node to node like this to verify that you're connected.
-
 ## Dependencies
 
 -   Golang 1.10+

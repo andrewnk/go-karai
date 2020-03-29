@@ -4,15 +4,15 @@
 
 The go-karai node needs to at a minimum do the following:
 
--   generate/manage a TRTL wallet (custom prefix?)
--   send TRTL transactions containing tx_extra data
--   accept a user input payload, determine its size
--   communicate w/ pinning server
--   connect to ipfs
--   create or connect to a transaction channel
--   parse channel events
--   coordinate transaction linkages
--   assign transaction timestamps
+-   [x] generate/manage a TRTL wallet (custom prefix?)
+-   [ ] send TRTL transactions containing tx_extra data
+-   [ ] accept a user input payload, determine its size
+-   [ ] communicate w/ pinning server
+-   [x] connect to ipfs
+-   [ ] create or connect to a transaction channel
+-   [ ] parse channel events
+-   [ ] coordinate transaction linkages
+-   [ ] assign transaction timestamps
 
 ## Vision
 

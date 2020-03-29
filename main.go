@@ -63,6 +63,7 @@ func handleStream(s network.Stream) {
 	go readData(rw)
 	go writeData(rw)
 }
+
 func readData(rw *bufio.ReadWriter) {
 	for {
 		str, _ := rw.ReadString('\n')
@@ -91,6 +92,7 @@ func writeData(rw *bufio.ReadWriter) {
 	}
 
 }
+
 func inputHandler() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
@@ -110,16 +112,22 @@ func inputHandler() {
 		} else if strings.Compare("version", text) == 0 {
 			logrus.Debug("Displaying version")
 			menuVersion()
+		} else if strings.Compare("license", text) == 0 {
+			logrus.Debug("Displaying license")
+			printLicense()
 		} else if strings.Compare("create-wallet", text) == 0 {
 			logrus.Debug("Creating Wallet")
 			menuCreateWallet()
 		} else if strings.Compare("open-wallet", text) == 0 {
 			logrus.Debug("Opening Wallet")
 			menuOpenWallet()
+		} else if strings.Compare("transaction-history", text) == 0 {
+			logrus.Debug("Opening Transaction History")
+			menuGetContainerTransactions()
 		} else if strings.Compare("open-wallet-info", text) == 0 {
 			logrus.Debug("Opening Wallet Info")
 			menuOpenWalletInfo()
-		} else if strings.Compare("peer-info", text) == 0 {
+		} else if strings.Compare("create-peer", text) == 0 {
 			menuCreatePeer()
 		} else if strings.Compare("exit", text) == 0 {
 			logrus.Warning("Exiting")
@@ -140,14 +148,54 @@ func inputHandler() {
 	}
 }
 
+func menuHelp() {
+	fmt.Println("\n\033[1;32mWALLET_OPTIONS\033[1;37m\x1b[0m")
+	fmt.Println("\033[1;37mopen-wallet \t\t \033[0;37mOpen a TRTL wallet\x1b[0m")
+	fmt.Println("\033[1;37mopen-wallet-info \t \033[0;37mShow wallet and connection info\x1b[0m")
+	fmt.Println("\033[1;37mcreate-wallet \t\t \033[0;37mCreate a TRTL wallet\x1b[0m")
+	fmt.Println("\033[1;30mwallet-balance \t\t Displays wallet balance\x1b[0m")
+
+	fmt.Println("\n\033[1;32mIPFS_OPTIONS\033[1;37m\x1b[0m")
+	fmt.Println("\033[1;37mcreate-peer \t\t \033[0;37mCreates IPFS peer\x1b[0m")
+	fmt.Println("\033[1;30mlist-servers \t\t Lists pinning servers\x1b[0m")
+
+	fmt.Println("\n\033[1;32mGENERAL_OPTIONS\033[1;37m\x1b[0m")
+	fmt.Println("\033[1;37mversion \t\t \033[0;37mDisplays version\033[0m")
+	fmt.Println("\033[1;37mlicense \t\t \033[0;37mDisplays license\033[0m")
+	fmt.Println("\033[1;37mexit \t\t\t \033[0;37mQuit immediately\x1b[0m")
+
+	fmt.Println("")
+}
+
 func menuOpenWalletInfo() {
-	// display primary address balance
 	walletInfoPrimaryAddressBalance()
-	// prompt for displaying keys
-	// walletInfoDisplayPromptForKeys(primaryAddressString)
-	// get the information of the node you're using
 	getNodeInfo()
 	getWalletAPIStatus()
+}
+
+func menuGetContainerTransactions() {
+	// logrus.Info("[Container transactions]")
+	req, err := http.NewRequest("GET", "http://127.0.0.1:8070/transactions", nil)
+	if err != nil {
+		log.Fatal("Error reading request for transactions. ", err)
+	}
+
+	req.Header.Set("X-API-KEY", "pineapples")
+
+	client := &http.Client{Timeout: time.Second * 10}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Error reading response from transactions query. ", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal("Error reading body of transactions response. ", err)
+	}
+
+	fmt.Printf("%s\n", body)
 }
 
 func getWalletAPIStatus() {
@@ -199,6 +247,7 @@ func getNodeInfo() {
 
 	fmt.Printf("%s\n", body)
 }
+
 func walletInfoPrimaryAddressBalance() {
 	logrus.Info("[Primary Address]")
 	req, err := http.NewRequest("GET", "http://127.0.0.1:8070/balances", nil)
@@ -224,22 +273,10 @@ func walletInfoPrimaryAddressBalance() {
 	fmt.Printf("%s\n", body)
 }
 
-func menuHelp() {
-	fmt.Println("\n\033[1;32mWALLET_OPTIONS\033[1;37m\x1b[0m")
-	fmt.Println("\033[1;37mopen-wallet \t\t \033[0;37mOpen a TRTL wallet\x1b[0m")
-	fmt.Println("\033[1;37mopen-wallet-info \t \033[0;37mShow wallet and connection info\x1b[0m")
-	fmt.Println("\033[1;37mcreate-wallet \t\t \033[0;37mCreate a TRTL wallet\x1b[0m")
-	fmt.Println("\033[1;30mwallet-balance \t\t Displays wallet balance\x1b[0m")
-
-	fmt.Println("\n\033[1;32mIPFS_OPTIONS\033[1;37m\x1b[0m")
-	fmt.Println("\033[1;37mcreate-peer \t\t \033[0;37mCreates IPFS peer\x1b[0m")
-	fmt.Println("\033[1;30mlist-servers \t\t Lists pinning servers\x1b[0m")
-
-	fmt.Println("\n\033[1;32mGENERAL_OPTIONS\033[1;37m\x1b[0m")
-	fmt.Println("\033[1;37mversion \t\t \033[0;37mDisplays version\033[0m")
-	fmt.Println("\033[1;37mexit \t\t\t \033[0;37mQuit immediately\x1b[0m")
-
-	fmt.Println("")
+func printLicense() {
+	fmt.Println("\n\033[1;32m" + appName + " \033[0;32mv" + semverInfo() + "\033[0;37m by \033[1;37m" + appDev)
+	fmt.Println("\033[0;32m" + appRepository + "\n")
+	fmt.Println("\033[1;37mMIT License\n\nCopyright (c) 2020-2021 RockSteady, TurtleCoin Developers\n\033[1;30mPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in allcopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n")
 }
 
 func menuCreateWallet() {
@@ -364,6 +401,7 @@ func menuCreatePeer() {
 
 	fmt.Printf("Peer ID is %s\n", nodePeer.ID())
 }
+
 func menuVersion() {
 	fmt.Println(appName + " - v" + semverInfo())
 }
